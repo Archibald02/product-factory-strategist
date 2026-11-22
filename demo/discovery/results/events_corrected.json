@@ -1,0 +1,15 @@
+{
+  "status": "schema_ready",
+  "steps": [
+    "eligible",
+    "sent",
+    "opened",
+    "accepted",
+    "confirmed"
+  ],
+  "metrics": [
+    "confirmed_D7"
+  ],
+  "issues": [],
+  "limit": "Specification only; sequence, deduplication, coverage and tracking delivery still need QA."
+}

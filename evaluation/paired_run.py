@@ -32,7 +32,7 @@ def prepare(path):
     chat, agent = path / "chat", path / "agent"
     chat.mkdir()
     agent.mkdir()
-    for name in ("AGENTS.md", "README.md", "strateg.py", "decision_map.py", "pilot.py"):
+    for name in ("AGENTS.md", "README.md", "strateg.py", "decision_map.py", "discovery.py", "pilot.py"):
         shutil.copyfile(ROOT / name, agent / name)
     shutil.copytree(ROOT / "knowledge", agent / "knowledge")
     shutil.copytree(ROOT / "demo/input", agent / "input")

@@ -15,6 +15,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from xml.etree import ElementTree
 
+from discovery import audit_copy, event_audit, interview_guide, interview_summary
 from decision_map import render_brief, render_diff, render_map
 from pilot import assess, economics, plan, validate_rules
 
@@ -556,9 +557,27 @@ def main():
         margin.add_argument("--" + flag, type=float, required=True)
     margin.add_argument("--eligible", type=int, required=True)
     margin.add_argument("--contribution", type=float)
+    for name in ("audit-copy", "interview-guide", "interview-summary", "audit-events"):
+        stage = command(name)
+        stage.add_argument("file", type=Path)
+        if name == "interview-summary":
+            stage.add_argument("observations", type=Path)
     args = p.parse_args()
     try:
-        if args.command == "analyze":
+        if args.command in {"audit-copy", "interview-guide", "interview-summary", "audit-events"}:
+            data = json.loads(args.file.read_text(encoding="utf-8"))
+            require(isinstance(data, dict), "Expected a JSON object.")
+            if args.command == "audit-copy":
+                output = audit_copy(data, args.file.resolve().parent)
+            elif args.command == "interview-guide":
+                output = interview_guide(data)
+            elif args.command == "interview-summary":
+                observations = json.loads(args.observations.read_text(encoding="utf-8"))
+                require(isinstance(observations, dict), "Expected a JSON object of observations.")
+                output = interview_summary(data, observations)
+            else:
+                output = event_audit(data)
+        elif args.command == "analyze":
             output = analyze(args.file, as_of=args.as_of, window_days=args.window_days, lag_days=args.lag_days)
         elif args.command == "plan-pilot":
             output = plan(args.activation_base_pct, args.activation_lift_pp, args.support_base_pct,
@@ -611,9 +630,9 @@ def main():
                     output = [{"ref": ref, "text": line} for _, ref, line in sorted(matches, reverse=True)[:20]]
                 else:
                     output = mutate(db, args)
-        print(output if args.command in {"map", "brief", "diff"} else json.dumps(output, ensure_ascii=False, indent=2))
+        print(output if args.command in {"map", "brief", "diff", "interview-guide"} else json.dumps(output, ensure_ascii=False, indent=2))
     except (ValueError, OSError, KeyError, IndexError, TypeError, sqlite3.Error,
-            zipfile.BadZipFile, ElementTree.ParseError) as error:
+            zipfile.BadZipFile, ElementTree.ParseError, AttributeError) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 2
     return 0

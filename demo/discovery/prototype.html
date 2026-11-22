@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>МегаСемья · проверка приглашения</title>
+<style>
+:root{color-scheme:light;--ink:#162d31;--accent:#156b59;--line:#c4dbd5;--panel:#f5faf8}
+*{box-sizing:border-box}body{margin:0;background:#e8f1ed;color:var(--ink);font:16px/1.5 system-ui,sans-serif}
+main{max-width:1110px;margin:auto;padding:clamp(18px,5vw,64px)}
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:30px}
+h1{margin:0;font-size:clamp(27px,4vw,45px);line-height:1.15}h2{margin:4px 0 12px;font-size:25px}p{margin:8px 0}
+.tag{border-radius:999px;background:#d1e9dd;padding:5px 12px;font-weight:650;font-size:13px;white-space:nowrap}
+nav{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+nav a{padding:9px 14px;border:1px solid var(--line);border-radius:8px;color:var(--accent);font-weight:650;background:white}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:18px;margin:14px 0 34px}
+article{padding:22px;border-radius:16px;border:1px solid var(--line);background:var(--panel)}
+article a{display:inline-block;margin-top:12px;padding:10px 15px;background:var(--accent);border-radius:8px;color:white;text-decoration:none;font-weight:650}
+article a:focus-visible,nav a:focus-visible{outline:3px solid #7353a6;outline-offset:3px}
+.summary{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin:12px 0}
+small{display:block;color:#435f59}section{scroll-margin-top:15px}footer{border-top:1px solid var(--line);padding-top:15px;color:#435f59}
+@media(max-width:570px){header{flex-direction:column;gap:10px}}
+</style>
+</head>
+<body>
+<main>
+<header><div><h1>Приглашение в МегаСемью</h1><p>Два варианта текста для проверки понимания до подключения.</p></div><span class="tag">Учебный макет</span></header>
+<nav aria-label="Версии"><a href="#v0">Исходная версия</a><a href="#v1">Предложение после аудита</a></nav>
+<section id="v0">
+<h2>Исходная версия</h2>
+<div class="grid">
+<article><small>Организатор</small><h3>Пригласите близкого</h3>
+<p>Пригласить можно любой номер.</p>
+<p>Все близкие будут пользоваться связью бесплатно.</p>
+<a href="#recipient-old">Отправить приглашение</a>
+</article>
+<article id="recipient-old"><small>Приглашённый</small><h3>Вы в МегаСемье</h3>
+<p>Ваш тариф автоматически останется прежним.</p>
+<a href="#v1">Сравнить с предложенной версией</a>
+</article>
+</div>
+</section>
+<section id="v1">
+<h2>Предложение после аудита</h2>
+<div class="grid">
+<article><small>Организатор</small><h3>Пригласите близкого</h3>
+<p>Сначала проверьте, подходит ли номер близкого.</p>
+<div class="summary"><small>Условия приглашения</small><p>Посмотрите, какие пакеты и условия оплаты доступны для этой пары.</p></div>
+<a href="#recipient-new">Посмотреть приглашение</a>
+</article>
+<article id="recipient-new"><small>Приглашённый</small><h3>Вас пригласили в МегаСемью</h3>
+<p>Приглашение ещё не подключает услугу.</p>
+<div class="summary"><small>Перед подтверждением</small><p>Проверьте условия для своего номера в приложении.</p></div>
+<a href="#scenario-conditions">Посмотреть сведения о макете</a>
+</article>
+</div>
+</section>
+<footer id="scenario-conditions">Статический учебный макет. Кнопки открывают части страницы. Подключение услуги, расчёт цены и проверка номера здесь не выполняются.</footer>
+</main>
+</body>
+</html>

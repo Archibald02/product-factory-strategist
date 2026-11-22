@@ -1,0 +1,52 @@
+{
+  "steps": [
+    {
+      "id": "eligible",
+      "event": "pilot_eligible",
+      "trigger": "Организатор назначен в группу и номер допущен",
+      "unit": "organizer",
+      "join_key": "organizer_key",
+      "owner": "аналитика"
+    },
+    {
+      "id": "sent",
+      "event": "invite_sent",
+      "trigger": "Сервер сохранил отправку приглашения",
+      "unit": "organizer",
+      "join_key": "organizer_key",
+      "owner": "продукт"
+    },
+    {
+      "id": "opened",
+      "event": "invite_opened",
+      "trigger": "Первый просмотр конкретного приглашения",
+      "unit": "organizer",
+      "join_key": "organizer_key",
+      "owner": "продукт"
+    },
+    {
+      "id": "accepted",
+      "event": "invite_accepted",
+      "trigger": "Получатель подтвердил намерение",
+      "unit": "organizer",
+      "join_key": "organizer_key",
+      "owner": "продукт"
+    },
+    {
+      "id": "confirmed",
+      "event": "invite_confirmed",
+      "trigger": "Сервер подтвердил успешное подключение",
+      "unit": "organizer",
+      "join_key": "organizer_key",
+      "owner": "подключения"
+    }
+  ],
+  "metrics": [
+    {
+      "id": "confirmed_D7",
+      "denominator_step": "eligible",
+      "numerator_step": "confirmed",
+      "window_days": 7
+    }
+  ]
+}

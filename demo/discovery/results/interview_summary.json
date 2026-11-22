@@ -1,0 +1,66 @@
+{
+  "scope": "study_fixture",
+  "participants": 4,
+  "groups": [
+    {
+      "task": "accept",
+      "role": "приглашённый",
+      "variant": "v0",
+      "n": 1,
+      "pass": 0,
+      "unclear": 0,
+      "critical": 1
+    },
+    {
+      "task": "accept",
+      "role": "приглашённый",
+      "variant": "v1",
+      "n": 1,
+      "pass": 1,
+      "unclear": 0,
+      "critical": 0
+    },
+    {
+      "task": "cost",
+      "role": "организатор",
+      "variant": "v0",
+      "n": 1,
+      "pass": 0,
+      "unclear": 0,
+      "critical": 1
+    },
+    {
+      "task": "cost",
+      "role": "организатор",
+      "variant": "v1",
+      "n": 1,
+      "pass": 0,
+      "unclear": 1,
+      "critical": 0
+    },
+    {
+      "task": "eligible",
+      "role": "организатор",
+      "variant": "v0",
+      "n": 1,
+      "pass": 0,
+      "unclear": 0,
+      "critical": 1
+    },
+    {
+      "task": "eligible",
+      "role": "организатор",
+      "variant": "v1",
+      "n": 1,
+      "pass": 1,
+      "unclear": 0,
+      "critical": 0
+    }
+  ],
+  "critical_tasks": [
+    "accept",
+    "cost",
+    "eligible"
+  ],
+  "interpretation": "Descriptive codes only; small or synthetic samples do not establish an effect."
+}

@@ -46,7 +46,17 @@ def main():
                      and second["claim_index"]["C001"]["state"] == "withdrawn"
                      and "24%" in second["claim_index"]["C004"]["text"],
                      "Delivery metric revisions were not preserved")
-    print("PASS: both demos ran from empty directories; Megafon stop and delivery reconciliation verified.")
+    discovery = "demo/discovery/"
+    copy = json.loads(call("strateg.py", "audit-copy", discovery + "audit.json", capture=True))
+    assert_value(copy["requires_review"] == ["C01", "C02", "C03"], "Copy audit did not match the demo")
+    observed = json.loads(call("strateg.py", "interview-summary", discovery + "interview.json",
+                               discovery + "observations_synthetic.json", capture=True))
+    assert_value(observed["scope"] == "study_fixture" and observed["participants"] == 4,
+                 "Synthetic interview evidence lost its provenance")
+    for version, expected in (("draft", "review"), ("corrected", "schema_ready")):
+        event_report = json.loads(call("strateg.py", "audit-events", discovery + f"events_{version}.json", capture=True))
+        assert_value(event_report["status"] == expected, f"Unexpected event audit for {version}")
+    print("PASS: both clean replays and all three communication checks verified.")
 
 
 if __name__ == "__main__":

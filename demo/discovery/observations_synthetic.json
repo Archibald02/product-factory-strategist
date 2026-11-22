@@ -1,0 +1,11 @@
+{
+  "scope": "study_fixture",
+  "observations": [
+    {"participant":"P01","task":"eligible","variant":"v0","code":"critical"},
+    {"participant":"P01","task":"cost","variant":"v0","code":"critical"},
+    {"participant":"P02","task":"accept","variant":"v0","code":"critical"},
+    {"participant":"P03","task":"eligible","variant":"v1","code":"pass"},
+    {"participant":"P03","task":"cost","variant":"v1","code":"unclear"},
+    {"participant":"P04","task":"accept","variant":"v1","code":"pass"}
+  ]
+}

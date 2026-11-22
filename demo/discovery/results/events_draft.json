@@ -1,0 +1,32 @@
+{
+  "status": "review",
+  "steps": [
+    "eligible",
+    "sent",
+    "opened",
+    "accepted",
+    "confirmed"
+  ],
+  "metrics": [
+    "confirmed_D7"
+  ],
+  "issues": [
+    {
+      "kind": "merged_event",
+      "event": "invite_completed",
+      "steps": [
+        "accepted",
+        "confirmed"
+      ]
+    },
+    {
+      "kind": "incompatible_units",
+      "metric": "confirmed_D7",
+      "steps": [
+        "eligible",
+        "confirmed"
+      ]
+    }
+  ],
+  "limit": "Specification only; sequence, deduplication, coverage and tracking delivery still need QA."
+}
