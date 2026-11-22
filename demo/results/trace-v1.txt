@@ -1,0 +1,103 @@
+› init
+{
+  "phase": "frame",
+  "paused": null,
+  "next": "Read the request, set decision frame and research questions.",
+  "sources": 0,
+  "claims": 0
+}
+› source demo/input/request.md
+{
+  "source": "S001",
+  "lines": 8
+}
+› checkpoint frame
+{
+  "completed": "frame",
+  "next_phase": "research"
+}
+› source demo/input/megafon_cnews.txt
+{
+  "source": "S002",
+  "lines": 4
+}
+› source demo/input/megafon_shop.txt
+{
+  "source": "S003",
+  "lines": 3
+}
+› source demo/input/mts.txt
+{
+  "source": "S004",
+  "lines": 3
+}
+› source demo/input/beeline.txt
+{
+  "source": "S005",
+  "lines": 3
+}
+› source demo/input/model_interview.txt
+{
+  "source": "S006",
+  "lines": 5
+}
+› claim
+{
+  "claim": "C001"
+}
+› claim
+{
+  "claim": "C002"
+}
+› claim
+{
+  "claim": "C003"
+}
+› claim
+{
+  "claim": "C004"
+}
+› claim
+{
+  "claim": "C005"
+}
+› claim
+{
+  "claim": "C006"
+}
+› claim
+{
+  "claim": "C007"
+}
+› checkpoint research
+{
+  "completed": "research",
+  "next_phase": "options"
+}
+› propose prototype
+{
+  "phase": "approval",
+  "choice": "prototype",
+  "next": "Present the trade-off. Record a decision only after human approval."
+}
+› decide prototype
+{
+  "phase": "followup",
+  "version": 1,
+  "choice": "prototype",
+  "mode": "simulation",
+  "commitments": [
+    {
+      "owner": "Аналитик",
+      "due": "2026-11-22",
+      "metric": "D7 и тематическая поддержка",
+      "trigger": "рост поддержки выше +1 п.п.",
+      "action": "остановить расширение",
+      "state": "open"
+    }
+  ]
+}
+› pause
+{
+  "paused": "Перерыв после моделируемого решения. При продолжении проверить поступивший CSV."
+}

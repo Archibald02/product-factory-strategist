@@ -1,0 +1,129 @@
+› status
+{
+  "phase": "followup",
+  "paused": "Перерыв после моделируемого решения. При продолжении проверить поступивший CSV.",
+  "next": "Review due commitments. Import any new evidence and map its impact.",
+  "sources": 6,
+  "claims": 7
+}
+› resume
+{
+  "phase": "followup",
+  "paused": null,
+  "next": "Review due commitments. Import any new evidence and map its impact.",
+  "sources": 6,
+  "claims": 7
+}
+› source demo/updates/pilot_synthetic.csv
+{
+  "source": "S007",
+  "lines": 5
+}
+› source demo/updates/pilot_synthetic.csv
+{
+  "source": "S007",
+  "reused": true
+}
+› analyze
+{
+  "periods": [
+    "2026-11-02",
+    "2026-11-03"
+  ],
+  "results": {
+    "activation": {
+      "control": {
+        "hits": 810,
+        "n": 4000
+      },
+      "test": {
+        "hits": 980,
+        "n": 4000
+      },
+      "delta_pp": 4.25,
+      "ci95_pp": [
+        2.424,
+        6.072
+      ]
+    },
+    "support": {
+      "control": {
+        "hits": 78,
+        "n": 4000
+      },
+      "test": {
+        "hits": 240,
+        "n": 4000
+      },
+      "delta_pp": 4.05,
+      "ci95_pp": [
+        3.207,
+        4.919
+      ]
+    }
+  },
+  "interval": "Newcombe/Wilson, independent arms"
+}
+› impact S007
+{
+  "source": "S007",
+  "supersedes": null,
+  "claims": [
+    "C007"
+  ],
+  "reason": "Тематические обращения превысили защитный порог"
+}
+› resolve C007
+{
+  "claim": "C007",
+  "state": "withdrawn"
+}
+› claim
+{
+  "claim": "C008"
+}
+› claim
+{
+  "claim": "C009"
+}
+› complete
+{
+  "action": "остановить расширение",
+  "due": "2026-11-22",
+  "metric": "D7 и тематическая поддержка",
+  "owner": "Аналитик",
+  "state": "done",
+  "trigger": "рост поддержки выше +1 п.п.",
+  "note": "Порог превышен в учебной таблице. Расширение в симуляции остановлено."
+}
+› propose keep
+{
+  "phase": "approval",
+  "choice": "keep",
+  "next": "Present the trade-off. Record a decision only after human approval."
+}
+› decide keep
+{
+  "phase": "followup",
+  "version": 2,
+  "choice": "keep",
+  "mode": "simulation",
+  "commitments": [
+    {
+      "owner": "Продукт и поддержка",
+      "due": "2026-12-03",
+      "metric": "Причины обращений D7",
+      "trigger": "повторяемая причина",
+      "action": "исправить и перепроверить",
+      "state": "open"
+    }
+  ]
+}
+› status
+{
+  "phase": "followup",
+  "paused": null,
+  "next": "Review due commitments. Import any new evidence and map its impact.",
+  "sources": 7,
+  "claims": 9
+}
