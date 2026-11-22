@@ -1,0 +1,78 @@
+{
+  "assessed_version": 1,
+  "current_version": 1,
+  "scope": "current",
+  "decision_mode": "simulation",
+  "decision_changed": false,
+  "human_approval_required": true,
+  "verdict": "stop",
+  "readiness": {
+    "status": "ready",
+    "as_of": "2026-11-10",
+    "window_days": 7,
+    "lag_days": 0,
+    "recheck_on": "2026-11-10",
+    "immature_periods": []
+  },
+  "checks": [
+    {
+      "metric": "activation_point",
+      "observed_pp": 4.25,
+      "min_pp": 3,
+      "status": "pass"
+    },
+    {
+      "metric": "activation_ci_lower95",
+      "observed_pp": 2.424,
+      "exclusive_min_pp": 0,
+      "status": "pass"
+    },
+    {
+      "metric": "support_ci_upper95",
+      "observed_pp": 4.919,
+      "max_pp": 1,
+      "status": "fail"
+    },
+    {
+      "metric": "net_contribution_scenario",
+      "status": "unknown",
+      "basis": "User-supplied scenario; confirm inputs before approval."
+    }
+  ],
+  "economics": null,
+  "metrics": {
+    "activation": {
+      "control": {
+        "hits": 810,
+        "n": 4000
+      },
+      "test": {
+        "hits": 980,
+        "n": 4000
+      },
+      "delta_pp": 4.25,
+      "ci95_pp": [
+        2.424,
+        6.072
+      ]
+    },
+    "support": {
+      "control": {
+        "hits": 78,
+        "n": 4000
+      },
+      "test": {
+        "hits": 240,
+        "n": 4000
+      },
+      "delta_pp": 4.05,
+      "ci95_pp": [
+        3.207,
+        4.919
+      ]
+    }
+  },
+  "manual_checks": [
+    "Confirm source completeness, billing incidents, real unit economics and approval."
+  ]
+}

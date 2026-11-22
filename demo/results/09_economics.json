@@ -1,0 +1,10 @@
+{
+  "eligible": 10000,
+  "expected_incremental_activations": 425.0,
+  "expected_incremental_organizers_with_support": 405.0,
+  "incremental_cost_per_eligible": 19.29,
+  "break_even_contribution_per_incremental_activation": 453.882353,
+  "net_contribution_per_eligible": null,
+  "nonnegative_net_contribution": null,
+  "assumption": "Point estimates and supplied inputs; excludes unlisted costs and uncertainty."
+}

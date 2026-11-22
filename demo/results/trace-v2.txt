@@ -24,12 +24,15 @@
   "source": "S007",
   "reused": true
 }
-› analyze
+› assess
 {
-  "periods": [
-    "2026-11-02",
-    "2026-11-03"
-  ],
+  "assessed_version": 1,
+  "current_version": 1,
+  "scope": "current",
+  "decision_mode": "simulation",
+  "decision_changed": false,
+  "human_approval_required": true,
+  "verdict": "stop",
   "readiness": {
     "status": "ready",
     "as_of": "2026-11-10",
@@ -38,7 +41,33 @@
     "recheck_on": "2026-11-10",
     "immature_periods": []
   },
-  "results": {
+  "checks": [
+    {
+      "metric": "activation_point",
+      "observed_pp": 4.25,
+      "min_pp": 3,
+      "status": "pass"
+    },
+    {
+      "metric": "activation_ci_lower95",
+      "observed_pp": 2.424,
+      "exclusive_min_pp": 0,
+      "status": "pass"
+    },
+    {
+      "metric": "support_ci_upper95",
+      "observed_pp": 4.919,
+      "max_pp": 1,
+      "status": "fail"
+    },
+    {
+      "metric": "net_contribution_scenario",
+      "status": "unknown",
+      "basis": "User-supplied scenario; confirm inputs before approval."
+    }
+  ],
+  "economics": null,
+  "metrics": {
     "activation": {
       "control": {
         "hits": 810,
@@ -70,7 +99,9 @@
       ]
     }
   },
-  "interval": "Newcombe/Wilson, independent arms"
+  "manual_checks": [
+    "Confirm source completeness, billing incidents, real unit economics and approval."
+  ]
 }
 › impact S007
 {

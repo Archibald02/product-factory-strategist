@@ -16,6 +16,7 @@ from urllib.parse import urlsplit
 from xml.etree import ElementTree
 
 from decision_map import render_brief, render_diff, render_map
+from pilot import assess, economics, plan, validate_rules
 
 MAX_BYTES = 10 * 1024 * 1024
 KINDS = ("public", "owned", "synthetic", "interview")
@@ -264,6 +265,8 @@ def validate_strategy(db, path, selected):
         body = payload.get(section, {})
         require(isinstance(body, dict) and all(isinstance(body.get(key), str) and body[key].strip()
                 for key in fields), "Incomplete " + section)
+    if "pilot_rules" in payload:
+        validate_rules(payload["pilot_rules"])
     claims = get(db, "claims", {})
     refs = payload.get("claims", [])
     require(isinstance(refs, list) and refs and all(isinstance(key, str) and key in claims and
@@ -393,7 +396,7 @@ def mutate(db, args):
     raise ValueError("Unknown command")
 
 
-def analyze(path, *, as_of=None, window_days=7, lag_days=0):
+def analyze(path, *, as_of=None, window_days=7, lag_days=0, round_results=True):
     """Two-arm binary outcomes measured on the same eligible cohorts."""
     counts = {}
     with path.open(encoding="utf-8-sig", newline="") as source:
@@ -432,6 +435,9 @@ def analyze(path, *, as_of=None, window_days=7, lag_days=0):
             return {"periods": periods, "readiness": readiness, "results": None,
                     "decision_action": "Keep the current decision. Re-export after recheck_on."}
     result = {}
+    def pp(value):
+        return round(value*100, 3) if round_results else value*100
+
     z = 1.95996398454
     for idx, name in [(1, "activation"), (2, "support")]:
         arms = {}
@@ -448,10 +454,32 @@ def analyze(path, *, as_of=None, window_days=7, lag_days=0):
         margin_low = math.hypot(t[0]-t[1], c[2]-c[0])
         margin_high = math.hypot(t[2]-t[0], c[0]-c[1])
         result[name] = dict(control={"hits": c[4], "n": c[3]}, test={"hits": t[4], "n": t[3]},
-                            delta_pp=round(delta*100, 3),
-                            ci95_pp=[round((delta-margin_low)*100, 3), round((delta+margin_high)*100, 3)])
+                            delta_pp=pp(delta),
+                            ci95_pp=[pp(delta-margin_low), pp(delta+margin_high)])
     return {"periods": periods, "readiness": readiness, "results": result,
             "interval": "Newcombe/Wilson, independent arms"}
+
+
+def assess_case(db, args):
+    current = get(db, "decision")
+    require(current, "An approved decision is required before assessment.")
+    selected = current
+    if args.version is not None and current["version"] != args.version:
+        selected = next((body for row in db.execute("SELECT body FROM events WHERE kind='decision'")
+                         if (body := json.loads(row[0]))["version"] == args.version), None)
+        require(selected, "Unknown decision version.")
+    rules = selected["strategy"].get("pilot_rules")
+    require(rules is not None, "The selected decision has no approved machine-readable pilot rules.")
+    validate_rules(rules)
+    outcomes = analyze(args.file, as_of=args.as_of, window_days=rules["window_days"],
+                       lag_days=rules["lag_days"], round_results=False)
+    costs = json.loads(args.economics.read_text(encoding="utf-8")) if args.economics else None
+    report = assess(outcomes, rules, costs)
+    return {"assessed_version": selected["version"], "current_version": current["version"],
+            "scope": "historical" if selected["version"] != current["version"] else "current",
+            "decision_mode": selected["mode"], "decision_changed": False,
+            "human_approval_required": True, **report}
+
 
 
 def main():
@@ -510,10 +538,35 @@ def main():
     calc.add_argument("--as-of", type=date.fromisoformat, help="Most recent complete date in the export.")
     calc.add_argument("--window-days", type=int, default=7)
     calc.add_argument("--lag-days", type=int, default=0, help="Complete calendar days of reporting lag.")
+    gate = command("assess")
+    gate.add_argument("file", type=Path)
+    gate.add_argument("--as-of", type=date.fromisoformat, required=True)
+    gate.add_argument("--version", type=int)
+    gate.add_argument("--economics", type=Path)
+    size = command("plan-pilot")
+    for flag in ("activation-base-pct", "activation-lift-pp", "support-base-pct",
+                 "support-expected-pp", "support-limit-pp"):
+        size.add_argument("--" + flag, type=float, required=True)
+    size.add_argument("--daily-eligible", type=int, required=True)
+    size.add_argument("--window-days", type=int, default=7)
+    size.add_argument("--lag-days", type=int, default=0)
+    size.add_argument("--power", type=float, default=0.8)
+    margin = command("economics")
+    for flag in ("activation-delta-pp", "support-delta-pp", "fixed-cost", "support-cost"):
+        margin.add_argument("--" + flag, type=float, required=True)
+    margin.add_argument("--eligible", type=int, required=True)
+    margin.add_argument("--contribution", type=float)
     args = p.parse_args()
     try:
         if args.command == "analyze":
             output = analyze(args.file, as_of=args.as_of, window_days=args.window_days, lag_days=args.lag_days)
+        elif args.command == "plan-pilot":
+            output = plan(args.activation_base_pct, args.activation_lift_pp, args.support_base_pct,
+                          args.support_expected_pp, args.support_limit_pp, args.daily_eligible,
+                          args.window_days, args.lag_days, args.power)
+        elif args.command == "economics":
+            output = economics(args.activation_delta_pp, args.support_delta_pp, args.eligible,
+                               args.fixed_cost, args.support_cost, args.contribution)
         else:
             with connect(args.case, args.command == "init") as db:
                 cmd = args.command
@@ -525,6 +578,8 @@ def main():
                         put(db, "phase", "frame")
                         event(db, "init", {"request": args.request})
                     output = case_status(db, True)
+                elif cmd == "assess":
+                    output = assess_case(db, args)
                 elif cmd == "status":
                     output = case_status(db, not args.full)
                 elif cmd == "map":

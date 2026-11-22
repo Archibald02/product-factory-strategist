@@ -1,0 +1,11 @@
+{
+  "activation_per_arm": 2943,
+  "support_per_arm": 3077,
+  "recommended_per_arm": 3077,
+  "total": 6154,
+  "enrollment_days": 16,
+  "days_to_complete": 23,
+  "marginal_power_target": 0.8,
+  "target_split": "1:1",
+  "assumption": "Normal approximation, independent arms, fixed horizon; not joint power or power to exceed a point-estimate cutoff."
+}

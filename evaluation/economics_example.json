@@ -1,0 +1,6 @@
+{
+  "eligible": 10000,
+  "fixed_cost": 120000,
+  "support_cost": 180,
+  "contribution_per_incremental_activation": null
+}

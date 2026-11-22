@@ -57,5 +57,12 @@
     "C005",
     "C006",
     "C007"
-  ]
+  ],
+  "pilot_rules": {
+    "window_days": 7,
+    "lag_days": 0,
+    "min_activation_delta_pp": 3,
+    "max_support_ci_upper_pp": 1,
+    "require_positive_activation_ci": true
+  }
 }

@@ -81,7 +81,7 @@ def second(case):
     invoke("resume")
     invoke("source", "demo/updates/pilot_synthetic.csv", "--kind", "synthetic")
     invoke("source", "demo/updates/pilot_synthetic.csv", "--kind", "synthetic")
-    invoke("analyze", "demo/updates/pilot_synthetic.csv", "--as-of", "2026-11-10")
+    invoke("assess", "demo/updates/pilot_synthetic.csv", "--as-of", "2026-11-10")
     invoke("impact", "S007", "Тематические обращения превысили защитный порог", "--claims", "C007")
     invoke("resolve", "C007", "В учебных данных рост +4,05 п.п. выше порога +1 п.п.")
     invoke("claim", "Учебная разность активаций +4,25 п.п.", "--kind", "simulation", "--ref", "S007:2-5")
