@@ -9,13 +9,13 @@ import re
 import sqlite3
 import sys
 import zipfile
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
 from xml.etree import ElementTree
 
-from decision_map import render_map
+from decision_map import render_brief, render_diff, render_map
 
 MAX_BYTES = 10 * 1024 * 1024
 KINDS = ("public", "owned", "synthetic", "interview")
@@ -393,7 +393,7 @@ def mutate(db, args):
     raise ValueError("Unknown command")
 
 
-def analyze(path):
+def analyze(path, *, as_of=None, window_days=7, lag_days=0):
     """Two-arm binary outcomes measured on the same eligible cohorts."""
     counts = {}
     with path.open(encoding="utf-8-sig", newline="") as source:
@@ -412,6 +412,25 @@ def analyze(path):
             arms[arm] = (n, a, s)
     require(counts and all(set(v) == {"control", "test"} for v in counts.values()),
             "Each period needs both arms.")
+    require(window_days > 0 and lag_days >= 0, "Window must be positive and lag nonnegative.")
+    periods = sorted(counts)
+    readiness = {"status": "unverified", "reason": "Supply --as-of to validate cohort maturity."}
+    if as_of is not None:
+        try:
+            ready_on = {period: date.fromisoformat(period) + timedelta(days=window_days + lag_days)
+                        for period in periods}
+        except OverflowError:
+            raise ValueError("Observation window exceeds supported date range.") from None
+        immature = [period for period in periods if ready_on[period] > as_of]
+        readiness = {"status": "blocked" if immature else "ready",
+                     "as_of": as_of.isoformat(), "window_days": window_days, "lag_days": lag_days,
+                     "recheck_on": max(ready_on.values()).isoformat(), "immature_periods": immature}
+        if immature:
+            readiness["eligible_without_full_window"] = {
+                arm: sum(counts[period][arm][0] for period in immature) for arm in ("control", "test")
+            }
+            return {"periods": periods, "readiness": readiness, "results": None,
+                    "decision_action": "Keep the current decision. Re-export after recheck_on."}
     result = {}
     z = 1.95996398454
     for idx, name in [(1, "activation"), (2, "support")]:
@@ -431,7 +450,8 @@ def analyze(path):
         result[name] = dict(control={"hits": c[4], "n": c[3]}, test={"hits": t[4], "n": t[3]},
                             delta_pp=round(delta*100, 3),
                             ci95_pp=[round((delta-margin_low)*100, 3), round((delta+margin_high)*100, 3)])
-    return {"periods": sorted(counts), "results": result, "interval": "Newcombe/Wilson, independent arms"}
+    return {"periods": periods, "readiness": readiness, "results": result,
+            "interval": "Newcombe/Wilson, independent arms"}
 
 
 def main():
@@ -446,6 +466,11 @@ def main():
     command("init", "request")
     command("status").add_argument("--full", action="store_true")
     command("map").description = "Render a decision map in Markdown."
+    brief = command("brief")
+    brief.add_argument("--map-file", help="Sibling Markdown filename with the detailed map.")
+    diff = command("diff")
+    diff.add_argument("--from-version", type=int)
+    diff.add_argument("--to-version", type=int)
     command("resume")
     command("pause", "note")
     command("checkpoint", "phase", "note")
@@ -482,10 +507,13 @@ def main():
     log.add_argument("--currency")
     calc = command("analyze")
     calc.add_argument("file", type=Path)
+    calc.add_argument("--as-of", type=date.fromisoformat, help="Most recent complete date in the export.")
+    calc.add_argument("--window-days", type=int, default=7)
+    calc.add_argument("--lag-days", type=int, default=0, help="Complete calendar days of reporting lag.")
     args = p.parse_args()
     try:
         if args.command == "analyze":
-            output = analyze(args.file)
+            output = analyze(args.file, as_of=args.as_of, window_days=args.window_days, lag_days=args.lag_days)
         else:
             with connect(args.case, args.command == "init") as db:
                 cmd = args.command
@@ -501,6 +529,12 @@ def main():
                     output = case_status(db, not args.full)
                 elif cmd == "map":
                     output = render_map(case_status(db), get(db, "sources", {}))
+                elif cmd == "brief":
+                    require(not args.map_file or re.fullmatch(r"[A-Za-z0-9_-]+\.md", args.map_file),
+                            "--map-file must be a sibling Markdown filename.")
+                    output = render_brief(case_status(db), args.map_file)
+                elif cmd == "diff":
+                    output = render_diff(case_status(db), args.from_version, args.to_version)
                 elif cmd == "show":
                     row = get(db, "sources", {}).get(args.id)
                     require(row is not None, "Source does not exist.")
@@ -522,7 +556,7 @@ def main():
                     output = [{"ref": ref, "text": line} for _, ref, line in sorted(matches, reverse=True)[:20]]
                 else:
                     output = mutate(db, args)
-        print(output if args.command == "map" else json.dumps(output, ensure_ascii=False, indent=2))
+        print(output if args.command in {"map", "brief", "diff"} else json.dumps(output, ensure_ascii=False, indent=2))
     except (ValueError, OSError, KeyError, IndexError, TypeError, sqlite3.Error,
             zipfile.BadZipFile, ElementTree.ParseError) as error:
         print(f"ERROR: {error}", file=sys.stderr)

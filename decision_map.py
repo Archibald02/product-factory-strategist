@@ -88,3 +88,115 @@ def render_map(status, sources):
             mode = " (симуляция)" if record["mode"] == "simulation" else ""
             lines += [f"- Версия {record['version']}{mode} · **{plain(title)}**. {plain(record['reason'])}"]
     return "\n".join(lines).rstrip()
+
+
+def render_brief(status, map_file):
+    decision = status["decision"]
+    proposal = status["proposal"] if status["phase"] == "approval" else None
+    current = proposal or decision
+    if not current:
+        raise ValueError("A proposal or a decision is required.")
+    strategy = current["strategy"]
+    option = strategy["options"][current["choice"]]
+    lines = ["# Карточка решения", "", plain(status["request"]), ""]
+    if proposal:
+        lines += ["**Статус:** ожидает согласования.", ""]
+    else:
+        mode = "учебное согласование" if decision["mode"] == "simulation" else "согласовано"
+        lines += [f"**Статус:** версия {decision['version']}, {mode}.", ""]
+    if status["phase"] == "revise":
+        lines += ["**Пересмотр открыт.** Ниже показано действующее решение.", ""]
+    if status["paused"]:
+        lines += [f"**Пауза:** {plain(status['paused'])}", ""]
+    basis = decision["reason"] if decision and not proposal else option["tradeoff"]
+    lines += [
+        f"**Решение:** {plain(option['title'])}. {plain(strategy['product']['direction'])}", "",
+        f"**Основание:** {plain(basis)}", "",
+        f"**Главное возражение:** {plain(option['objection'])}", "",
+        f"**Что измеряем:** {plain(strategy['validation']['metric'])}", "",
+        f"**Условие продолжения:** {plain(strategy['validation']['threshold'])}", "",
+        f"**Ограничение вреда:** {plain(strategy['validation']['guardrails'])}", "",
+    ]
+    commitments = [task for task in (decision["commitments"] if decision else []) if task["state"] == "open"]
+    if commitments:
+        task = min(commitments, key=lambda task: task["due"])
+        prefix = "Ближайшее действующее обязательство" if proposal else "Ближайшее обязательство"
+        lines += [f"**{prefix}:** {plain(task['owner'])}, до {task['due']}. {plain(task['action'])}", ""]
+    elif decision and not proposal:
+        lines += [f"**Владелец решения:** {plain(decision['owner'])}", ""]
+    else:
+        lines += ["**Ответственный:** назначить при согласовании.", ""]
+    lines += ["**Основания в журнале:** " + ", ".join(f"`{key}`" for key in strategy["claims"]) + "."]
+    if map_file:
+        lines += ["", f"[Расчёты, локаторы источников и история]({map_file})"]
+    return "\n".join(lines)
+
+
+def commitment_key(task):
+    return tuple(task[key] for key in ("owner", "due", "metric", "trigger", "action"))
+
+
+def describe_commitment(task):
+    owner, due, _, _, action = task
+    return f"{plain(owner)} · {due} · {plain(action)}"
+
+
+FIELD_LABELS = {
+    "audience": "аудитория", "job": "задача клиента", "alternatives": "альтернативы",
+    "direction": "направление", "refusals": "что отложено", "economics": "экономика",
+    "situation": "ситуация", "barrier": "барьер", "message": "сообщение",
+    "proof": "подтверждение", "channels": "каналы", "metric": "метрика",
+    "comparison": "с чем сравнить", "window": "окно", "threshold": "порог",
+    "guardrails": "ограничение вреда",
+}
+TASK_STATE = {"done": "выполнено", "cancelled": "отменено"}
+
+
+def render_diff(status, from_version, to_version):
+    events = status["events"]
+    records = {event["body"]["version"]: event for event in events if event["kind"] == "decision"}
+    if not records:
+        raise ValueError("At least two recorded decision versions are required.")
+    target = max(records) if to_version is None else to_version
+    origin = target - 1 if from_version is None else from_version
+    if origin not in records or target not in records or origin >= target:
+        raise ValueError("Choose two existing decision versions in chronological order.")
+    old, new = records[origin]["body"], records[target]["body"]
+    before, after = old["strategy"], new["strategy"]
+    lines = [f"# Сравнение решений · {origin} → {target}", "",
+             f"**Было:** {plain(before['options'][old['choice']]['title'])}. {plain(old['reason'])}", "",
+             f"**Стало:** {plain(after['options'][new['choice']]['title'])}. {plain(new['reason'])}", "",
+             "## Что изменилось", ""]
+    changes = []
+    for title, section in (("Продукт", "product"), ("Коммуникации", "communication"), ("Проверка", "validation")):
+        for key, value in after[section].items():
+            if before[section].get(key) != value:
+                changes.append(f"- **{title} · {plain(FIELD_LABELS.get(key, key))}:** {plain(before[section].get(key, '—'))} → {plain(value)}")
+    lines.extend(changes or ["Продукт, коммуникации и план проверки совпадают."])
+    lines += ["", "## Основания пересмотра", ""]
+    refs = [change for version in sorted(records) if origin < version <= target
+            for change in records[version]["body"]["changes"]]
+    if refs:
+        for change in refs:
+            source = status["source_index"][change["source"]]
+            links = ", ".join(change["claims"]) or "без привязки к конкретному основанию"
+            lines.append(f"- `{change['source']}` · {plain(source['title'])} → {links}. {plain(change['reason'])}")
+    else:
+        lines.append("В журнале версий нет связанных записей о новых материалах.")
+    added = sorted(set(after["claims"]) - set(before["claims"]))
+    removed = sorted(set(before["claims"]) - set(after["claims"]))
+    lines += ["", f"Основания добавлены: {', '.join(added) or '—'}. "
+              f"Убраны из решения: {', '.join(removed) or '—'}.", "", "## Обязательства", ""]
+    previous = {commitment_key(task) for task in old["commitments"] if task["state"] == "open"}
+    current = {commitment_key(task) for task in new["commitments"] if task["state"] == "open"}
+    closed = {commitment_key(event["body"]): event["body"]["state"] for event in events
+              if event["kind"] == "commitment" and records[origin]["id"] < event["id"] < records[target]["id"]}
+    for label, keys in (("Перешло", previous & current), ("Добавлено", current - previous),
+                        ("Закрыто", (previous - current) & closed.keys()),
+                        ("Исчезло из версии", previous - current - closed.keys())):
+        for key in sorted(keys):
+            suffix = f" ({TASK_STATE[closed[key]]})" if label == "Закрыто" else ""
+            lines.append(f"- **{label}:** {describe_commitment(key)}{suffix}.")
+    if not (previous or current):
+        lines.append("Открытых обязательств на момент утверждения версий не было.")
+    return "\n".join(lines)

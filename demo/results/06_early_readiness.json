@@ -1,0 +1,22 @@
+{
+  "periods": [
+    "2026-11-02",
+    "2026-11-03"
+  ],
+  "readiness": {
+    "status": "blocked",
+    "as_of": "2026-11-09",
+    "window_days": 7,
+    "lag_days": 0,
+    "recheck_on": "2026-11-10",
+    "immature_periods": [
+      "2026-11-03"
+    ],
+    "eligible_without_full_window": {
+      "control": 2000,
+      "test": 2000
+    }
+  },
+  "results": null,
+  "decision_action": "Keep the current decision. Re-export after recheck_on."
+}

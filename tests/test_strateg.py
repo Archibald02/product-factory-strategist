@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 
 import strateg
@@ -21,13 +22,15 @@ class LedgerTest(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.case = Path(self.tmp.name) / "case"
 
-    def cli(self, *args, expected=0):
+    def cli(self, *args, expected=0, markdown=False):
         output = subprocess.run(
             [sys.executable, "-X", "utf8", "strateg.py", "--case", str(self.case), *args],
             cwd=ROOT, text=True, capture_output=True, encoding="utf-8",
         )
         self.assertEqual(output.returncode, expected, output.stderr)
-        return json.loads(output.stdout) if expected == 0 else output.stderr
+        if expected:
+            return output.stderr
+        return output.stdout if markdown else json.loads(output.stdout)
 
     def test_end_to_end_pause_and_revision(self):
         with contextlib.redirect_stdout(io.StringIO()):
@@ -53,6 +56,52 @@ class LedgerTest(unittest.TestCase):
         for fragment in ("Версия 2", "Версия 1", "C007 · прогноз · отозвано", "S007:2-5",
                          "Продукт и поддержка", "https://support.mts.ru/"):
             self.assertIn(fragment, report)
+
+    def test_early_export_preserves_existing_decision(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            first(self.case)
+        before = self.cli("status", "--full")
+        outcome = self.cli("analyze", "demo/updates/pilot_early_synthetic.csv", "--as-of", "2026-11-09")
+        self.assertEqual(outcome["readiness"]["status"], "blocked")
+        self.assertEqual(outcome["readiness"]["recheck_on"], "2026-11-10")
+        self.assertEqual(outcome["readiness"]["eligible_without_full_window"], {"control": 2000, "test": 2000})
+        self.assertIsNone(outcome["results"])
+        self.assertEqual(self.cli("status", "--full"), before)
+        mature = self.cli("analyze", "demo/updates/pilot_synthetic.csv", "--as-of", "2026-11-10")
+        self.assertEqual(mature["readiness"]["status"], "ready")
+        self.assertEqual(mature["results"]["support"]["delta_pp"], 4.05)
+        delayed = strateg.analyze(ROOT / "demo/updates/pilot_synthetic.csv", as_of=date(2026, 11, 10), lag_days=1)
+        self.assertEqual(delayed["readiness"]["recheck_on"], "2026-11-11")
+        self.assertEqual(delayed["readiness"]["status"], "blocked")
+
+    def test_diff_and_brief_from_saved_versions(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            first(self.case)
+        self.assertIn("two existing decision versions", self.cli("diff", expected=2))
+        with contextlib.redirect_stdout(io.StringIO()):
+            second(self.case)
+        diff = self.cli("diff", "--from-version", "1", "--to-version", "2", markdown=True)
+        for fragment in ("Сравнение решений", "S007", "C008, C009", "Добавлено", "Закрыто"):
+            self.assertIn(fragment, diff)
+        self.assertIsNotNone(self.cli("diff", "--from-version", "2", "--to-version", "1", expected=2))
+        brief = self.cli("brief", "--map-file", "03_decision_map.md", markdown=True)
+        for fragment in ("версия 2", "Защитный порог", "Главное возражение", "Продукт и поддержка",
+                         "(03_decision_map.md)"):
+            self.assertIn(fragment, brief)
+        self.assertIn("sibling", self.cli("brief", "--map-file", "../private.md", expected=2))
+
+    def test_conflicting_source_requires_review_before_proposal(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            first(self.case)
+        self.cli("resume")
+        file = Path(self.tmp.name) / "regional-conditions.txt"
+        file.write_text("Учебный сценарий: региональное условие в тестовом сегменте противоречит анонсу.", encoding="utf-8")
+        source = self.cli("source", str(file), "--kind", "synthetic")["source"]
+        self.cli("impact", source, "Проверить совместимость в тестовом сегменте", "--claims", "C001")
+        error = self.cli("propose", "prototype", "demo/results/v1.json", expected=2)
+        self.assertIn("active claim IDs", error)
+        self.assertIn("C001", self.cli("status")["review_claims"])
+        self.assertEqual(self.cli("status")["decision"]["version"], 1)
 
     def test_delivery_retires_incomparable_evidence(self):
         with contextlib.redirect_stdout(io.StringIO()) as trace:
@@ -113,6 +162,7 @@ class LedgerTest(unittest.TestCase):
 
     def test_rate_check_and_missing_arm(self):
         output = strateg.analyze(ROOT / "demo/updates/pilot_synthetic.csv")
+        self.assertEqual(output["readiness"]["status"], "unverified")
         self.assertEqual(output["results"]["activation"]["delta_pp"], 4.25)
         self.assertEqual(output["results"]["support"]["delta_pp"], 4.05)
         file = Path(self.tmp.name) / "missing.csv"
