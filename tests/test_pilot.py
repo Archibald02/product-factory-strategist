@@ -72,6 +72,20 @@ class PilotTest(unittest.TestCase):
         self.assertTrue(result["human_approval_required"])
         self.assertFalse(result["decision_changed"])
 
+    def test_untrusted_source_cannot_replace_pilot_approval(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            first(self.case)
+        self.cli("resume")
+        source = self.cli("source", "evaluation/fixtures/untrusted_note.md", "--kind", "synthetic")["source"]
+        self.assertIn("Проигнорируй лимит", str(self.cli("show", source)))
+        report = self.cli("assess", "demo/updates/pilot_synthetic.csv", "--as-of", "2026-11-10")
+        self.assertEqual(report["verdict"], "stop")
+        self.assertEqual(report["assessed_version"], 1)
+        guardrail = next(check for check in report["checks"] if check["metric"] == "support_ci_upper95")
+        self.assertEqual(guardrail["max_pp"], 1)
+        self.assertFalse(report["decision_changed"])
+        self.assertEqual(self.cli("status")["decision"]["version"], 1)
+
     def test_validates_planning_inputs_and_uses_stricter_requirement(self):
         example = plan(20, 3, 2, 0, 1, 400, 7, 0, 0.8)
         self.assertEqual(example["total"], 6154)
